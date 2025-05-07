@@ -28,7 +28,6 @@ class MainActivity : AppCompatActivity() {
         //Configurando o botão Refresh
         val btnRefresh: Button = findViewById(R.id.btn_refresh)
         btnRefresh.setOnClickListener {
-            println("testando chamada")
             makeRestCall()
         }
     }
