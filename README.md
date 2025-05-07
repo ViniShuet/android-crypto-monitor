@@ -1,8 +1,16 @@
+# Monitor de Cotação do Bitcoin
+
 ## Autor
 Vinicius Ferreira Shuet - RM:98160
 
 ## Descrição
-Este projeto foi criado com o intuito de exibir a cotação atual do Bitcoin. Os usuários podem atualizar as informações a qualquer momento clicando no botão "Atualizar".
+Este projeto é um aplicativo Android desenvolvido para monitorar a cotação do Bitcoin em tempo real. Ele consome dados da API do Mercado Bitcoin e apresenta de forma clara e intuitiva as informações mais recentes sobre o mercado. 
+
+## Tecnologias Utilizadas
+- **Kotlin**: Linguagem de programação principal.
+- **Retrofit**: Para comunicação HTTP e integração com a API.
+- **Kotlin Coroutines**: Para lidar com operações assíncronas.
+- **Gson**: Para converter respostas JSON em objetos Kotlin.
 
 ## Api utilizada
   mercadoBitcoin.net	
