@@ -2,80 +2,102 @@ package ViniShuet.com.github.android_crypto_monitor
 
 import ViniShuet.com.github.android_crypto_monitor.service.MercadoBitcoinServiceFactory
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
-
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        // Configurando a toolbar
-        val toolbarMain: Toolbar = findViewById(R.id.toolbar_main)
-        configureToolbar(toolbarMain)
-
-        //Configurando o botão Refresh
-        val btnRefresh: Button = findViewById(R.id.btn_refresh)
-        btnRefresh.setOnClickListener {
-            makeRestCall()
+        setContent {
+            CryptoMonitorApp()
         }
     }
-    private fun configureToolbar(toolbar: Toolbar) {
-        setSupportActionBar(toolbar)
-        toolbar.setTitleTextColor(getColor(R.color.white))
-        supportActionBar?.setTitle(getText(R.string.app_title))
-        supportActionBar?.setBackgroundDrawable(getDrawable(R.color.primary))
-    }
+}
 
-    private fun makeRestCall() {
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val service = MercadoBitcoinServiceFactory().create()
-                val response = service.getTicker()
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CryptoMonitorApp() {
+    val scope = rememberCoroutineScope()
+    var bitcoinValue by remember { mutableStateOf("—") }
+    var lastUpdate by remember { mutableStateOf("—") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-                if (response.isSuccessful) {
-                    val tickerResponse = response.body()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Cotação Bitcoin", color = MaterialTheme.colorScheme.onPrimary) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Cotação Atual", fontSize = 22.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(bitcoinValue, fontSize = 36.sp, textAlign = TextAlign.Center)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Última atualização: $lastUpdate", fontSize = 14.sp)
 
-                    // Atualizando os componentes TextView
-                    val lblValue: TextView = findViewById(R.id.lbl_value)
-                    val lblDate: TextView = findViewById(R.id.lbl_date)
+            Spacer(modifier = Modifier.height(24.dp))
 
-                    val lastValue = tickerResponse?.ticker?.last?.toDoubleOrNull()
-                    if (lastValue != null) {
-                        val numberFormat = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
-                        lblValue.text = numberFormat.format(lastValue)
+            Button(
+                onClick = {
+                    scope.launch {
+                        isLoading = true
+                        errorMessage = null
+                        try {
+                            val service = MercadoBitcoinServiceFactory().create()
+                            val response = service.getTicker()
+                            if (response.isSuccessful) {
+                                val ticker = response.body()?.ticker
+                                val lastValue = ticker?.last?.toDoubleOrNull()
+                                val date = ticker?.date?.let { Date(it * 1000L) }
+
+                                val numberFormat = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+                                bitcoinValue = lastValue?.let { numberFormat.format(it) } ?: "Erro"
+
+                                val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+                                lastUpdate = sdf.format(date ?: Date())
+                            } else {
+                                errorMessage = "Erro: ${response.code()}"
+                            }
+                        } catch (e: Exception) {
+                            errorMessage = "Falha: ${e.message}"
+                        } finally {
+                            isLoading = false
+                        }
                     }
+                },
+                enabled = !isLoading
+            ) {
+                if (isLoading)
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                else
+                    Text("Atualizar")
+            }
 
-                    val date = tickerResponse?.ticker?.date?.let { Date(it * 1000L) }
-                    val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
-                    lblDate.text = sdf.format(date)
-
-                } else {
-                    // Trate o erro de resposta não bem-sucedida
-                    val errorMessage = when (response.code()) {
-                        400 -> "Bad Request"
-                        401 -> "Unauthorized"
-                        403 -> "Forbidden"
-                        404 -> "Not Found"
-                        else -> "Unknown error"
-                    }
-                    Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_LONG).show()
-                }
-
-            } catch (e: Exception) {
-                // Trate o erro de falha na chamada
-                Toast.makeText(this@MainActivity, "Falha na chamada: ${e.message}", Toast.LENGTH_LONG).show()
+            errorMessage?.let {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = it, color = MaterialTheme.colorScheme.error)
             }
         }
     }
