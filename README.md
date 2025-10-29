@@ -2,6 +2,7 @@
 
 ## Autor
 Vinicius Ferreira Shuet - RM:98160
+Amanda Cornelsen - RM97760
 
 ## Descrição
 Este projeto é um aplicativo Android desenvolvido para monitorar a cotação do Bitcoin em tempo real. Ele consome dados da API do Mercado Bitcoin e apresenta de forma clara e intuitiva as informações mais recentes sobre o mercado. 
